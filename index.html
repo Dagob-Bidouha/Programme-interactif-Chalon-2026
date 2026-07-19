@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Assistant - Chalon 2026</title>
+    <style>
+        :root {
+            --primary: #e63946;
+            --secondary: #1d3557;
+            --accent: #457b9d;
+            --background: #f1f5f9;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+
+        * {
+            box-sizing: border-box;
+            max-width: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            margin: 0;
+            padding: 8px;
+            font-size: 0.9rem;
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        header {
+            width: 100%;
+            max-width: 800px;
+            margin: 5px auto 10px auto;
+            text-align: center;
+        }
+
+        header h1 {
+            color: var(--primary);
+            margin: 0;
+            font-size: 1.4rem;
+        }
+
+        header p {
+            margin: 2px 0 0 0;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto 12px auto;
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .search-box:focus {
+            border-color: var(--primary);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 6px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #64748b;
+            padding: 4px 10px;
+            cursor: pointer;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            background-color: #ffe3e3;
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .btn {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: var(--text);
+            padding: 4px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.8rem;
+        }
+
+        .btn.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .live-banner {
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 10px 12px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .card.favorite { border-left-color: var(--primary); background-color: #fffdfc; }
+        .card.pinned:not(.favorite) { border-left-color: #f59e0b; }
+
+        .card-content {
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .card-header-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 2px;
+        }
+
+        .time {
+            font-size: 0.8rem;
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        .zone-tag {
+            background-color: #f1f5f9;
+            color: #475569;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--secondary);
+            word-break: break-word;
+        }
+
+        .company {
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 2px;
+            word-break: break-word;
+        }
+
+        .details {
+            font-size: 0.78rem;
+            color: #64748b;
+            word-break: break-word;
+        }
+
+        .card-right {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+
+        /* Liens fiche et maps transformés en boutons confortables */
+        .card-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-end;
+        }
+
+        .fiche-btn, .maps-btn {
+            font-size: 0.8rem;
+            text-decoration: none;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-align: center;
+            min-width: 75px;
+            display: inline-block;
+        }
+        .fiche-btn { 
+            background-color: #e2e8f0; 
+            color: var(--secondary); 
+        }
+        .maps-btn { 
+            background-color: #dcfce7; 
+            color: #15803d; 
+        }
+
+        .action-triggers {
+            display: flex;
+            gap: 6px;
+        }
+
+        .fav-btn, .pin-btn {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            padding: 6px;
+            filter: grayscale(100%) opacity(30%);
+        }
+        .fav-btn.active, .pin-btn.active { filter: grayscale(0%) opacity(100%); }
+
+        .trajet-info {
+            margin-top: 6px;
+            padding: 6px 8px;
+            background-color: #f0fdf4;
+            border-left: 3px solid #16a34a;
+            border-radius: 4px;
+            font-size: 0.78rem;
+            color: #14532d;
+        }
+
+        .marge-badge {
+            display: inline-block;
+            padding: 1px 4px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+        .marge-large { background-color: #dcfce7; color: #15803d; }
+        .marge-short { background-color: #fef3c7; color: #b45309; }
+
+        .no-result { text-align: center; color: #64748b; padding: 20px; }
+        #map-container { width: 100%; max-width: 800px; margin: 0 auto; display: none; height: 80vh; }
+        iframe { width: 100%; height: 100%; border: none; border-radius: 8px; }
+        
+        .gps-btn, .auto-btn {
+            border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.78rem; cursor: pointer; font-weight: bold;
+        }
+        .gps-btn { background-color: #3b82f6; color: white; }
+        .auto-btn { background-color: #10b981; color: white; }
+        .select-coordonnees { padding: 2px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; }
+
+        @media (max-width: 500px) {
+            .card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 12px;
+            }
+
+            .card-right {
+                width: 100%;
+                max-width: 100%;
+                justify-content: space-between;
+                border-top: 1px dashed #e2e8f0;
+                padding-top: 10px;
+                margin-top: 2px;
+            }
+
+            .card-actions {
+                flex-direction: row;
+                gap: 10px;
+            }
+            
+            .fiche-btn, .maps-btn {
+                padding: 8px 16px; /* Encore plus gros sur mobile */
+                font-size: 0.85rem;
+            }
+
+            .title {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Compagnon de Route 2026</h1>
+        <p>Optimisation d'itinéraire en temps réel</p>
+    </header>
+
+    <div class="controls">
+        <div class="tabs">
+            <button class="tab-btn active" id="tab-planning" onclick="switchMode('planning')">🗓️ Liste & Filtres</button>
+            <button class="tab-btn" id="tab-live" onclick="switchMode('live')">⚡ À voir maintenant (2h)</button>
+            <button class="tab-btn" id="tab-map" onclick="switchMode('map')">🗺️ Plan</button>
+        </div>
+
+        <div id="filter-section">
+            <input type="text" id="search" class="search-box" placeholder="Rechercher un spectacle, lieu...">
+            <div class="filters" style="margin-top: 6px;">
+                <button class="btn active" id="btn-tous" onclick="filterDay('Tous', this)">Tous</button>
+                <button class="btn" id="btn-jeudi" onclick="filterDay('Jeudi 23 juillet', this)">Jeudi</button>
+                <button class="btn" id="btn-vendredi" onclick="filterDay('Vendredi 24 juillet', this)">Vendredi</button>
+                <button class="btn" id="btn-samedi" onclick="filterDay('Samedi 25 juillet', this)">Samedi</button>
+                <button class="btn" id="btn-dimanche" onclick="filterDay('Dimanche 26 juillet', this)">Dimanche</button>
+                <button class="btn" id="btn-favoris" onclick="filterDay('Favoris', this)" style="border-color: var(--primary);">❤️ Mon Planning</button>
+                <button class="btn" id="btn-selection" onclick="filterDay('Selection', this)" style="border-color: #f59e0b;">📌 Idées</button>
+            </div>
+        </div>
+
+        <div id="live-info" class="live-banner">
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                <button class="auto-btn" onclick="setToRealTime()">🔄 Direct</button>
+                <select id="live-day" class="select-coordonnees" onchange="render()">
+                    <option value="Jeudi 23 juillet">Jeudi 23</option>
+                    <option value="Vendredi 24 juillet">Vendredi 24</option>
+                    <option value="Samedi 25 juillet">Samedi 25</option>
+                    <option value="Dimanche 26 juillet">Dimanche 26</option>
+                </select>
+                <input type="text" id="live-time" value="10h10" style="width: 50px; text-align: center; font-weight: bold; border-radius: 4px; border: none;" oninput="render()">
+                <span>📍 Case :</span>
+                <div style="display: flex; gap: 2px;">
+                    <select id="live-letter" class="select-coordonnees" onchange="render()">
+                        <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F" selected>F</option><option value="G">G</option><option value="H">H</option><option value="I">I</option><option value="J">J</option><option value="K">K</option><option value="L">L</option>
+                    </select>
+                    <select id="live-number" class="select-coordonnees" onchange="render()">
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6" selected>6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option>
+                    </select>
+                </div>
+                <button class="gps-btn" onclick="getUserLocation()">📍 GPS</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid" id="spectacles-list"></div>
+
+    <div id="map-container">
+        <iframe src="plan_2026.pdf" title="Plan du festival"></iframe>
+    </div>
+
+    <script src="programme.js"></script>
+
+    <script>
+        const PASTILLES_COORDONNEES = {
+            "1": "B12",  "2": "B11",  "3": "H4",   "4": "C10",  "5": "B12",
+            "6": "H10",  "7": "G7",   "8": "D1",   "9": "D5",   "10": "G1",
+            "11": "F5",  "12": "I8",  "13": "G1",  "14": "F8",  "15": "F7",
+            "16": "B10", "17": "C2",  "18": "C2",  "19": "H5",  "20": "B8",
+            "21": "K8",  "22": "C9",  "23": "B10", "24": "G7",  "25": "F10",
+            "26": "G10", "27": "H4",  "28": "F7",  "29": "D5",  "30": "D1",
+            "31": "F8",  "32": "B12", "33": "H4",  "34": "H4",  "35": "B11",
+            "36": "F10", "37": "I7",  "38": "I10", "39": "B9",  "40": "E5",
+            "41": "H4",  "42": "G8",  "43": "G5",  "44": "G6",  "45": "E6",
+            "46": "D8",  "47": "H4",  "48": "H4",  "49": "H7",  "50": "H7",
+            "51": "I7",  "52": "I8",  "53": "K8",  "54": "C6",  "55": "I9",
+            "56": "H5",  "57": "G6",  "58": "D5",  "59": "L2",  "60": "C7",
+            "61": "D4",  "62": "I10", "63": "I7"
+        };
+
+        function letterToNumber(letter) {
+            const alphabet = "ABCDEFGHIJKL";
+            return alphabet.indexOf(letter.toUpperCase()) + 1;
+        }
+
+        function slugify(text) {
+            if (!text) return "";
+            return text.toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/['’]/g, '-').replace(/[^a-z0-9 -]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-+/, '').replace(/-+$/, ''); 
+        }
+
+        function getTrajetTime(caseA, caseB) {
+            if (!caseA || !caseB) return 15;
+            if (caseA === caseB) return 5;
+            const xA = letterToNumber(caseA.charAt(0));
+            const yA = parseInt(caseA.substring(1));
+            const xB = letterToNumber(caseB.charAt(0));
+            const yB = parseInt(caseB.substring(1));
+            if (isNaN(xA) || isNaN(yA) || isNaN(xB) || isNaN(yB)) return 15;
+            const distanceCarreaux = Math.sqrt(Math.pow(xB - xA, 2) + Math.pow(yB - yA, 2));
+            return Math.max(5, Math.min(30, Math.round(distanceCarreaux * 2.5)));
+        }
+
+        let favoris = JSON.parse(localStorage.getItem('festival_favs')) || [];
+        let selection = JSON.parse(localStorage.getItem('festival_select')) || [];
+        let currentDayFilter = 'Tous';
+        let currentMode = 'planning'; 
+        let userCoordinates = null; 
+
+        const listContainer = document.getElementById('spectacles-list');
+        const searchInput = document.getElementById('search');
+        const filterSection = document.getElementById('filter-section');
+        const liveInfo = document.getElementById('live-info');
+        const mapContainer = document.getElementById('map-container');
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'festival_favs') favoris = JSON.parse(e.newValue) || [];
+            if (e.key === 'festival_select') selection = JSON.parse(e.newValue) || [];
+            render();
+        });
+
+        function setToRealTime() {
+            const maintenant = new Date();
+            const heure = String(maintenant.getHours()).padStart(2, '0');
+            const minutes = String(maintenant.getMinutes()).padStart(2, '0');
+            document.getElementById('live-time').value = `${heure}h${minutes}`;
+            const jourDeLaSemaine = maintenant.getDate();
+            const mois = maintenant.getMonth(); 
+            let jourDetecte = "Jeudi 23 juillet"; 
+            if (mois === 6) { 
+                if (jourDeLaSemaine === 23) jourDetecte = "Jeudi 23 juillet";
+                else if (jourDeLaSemaine === 24) jourDetecte = "Vendredi 24 juillet";
+                else if (jourDeLaSemaine === 25) jourDetecte = "Samedi 25 juillet";
+                else if (jourDeLaSemaine === 26) jourDetecte = "Dimanche 26 juillet";
+            }
+            document.getElementById('live-day').value = jourDetecte;
+            render();
+        }
+
+        function getCase(lieuStr) {
+            if (!lieuStr) return "F6"; 
+            const lieuNormalise = lieuStr.toLowerCase().trim();
+            const matchPastille = lieuNormalise.match(/pastille\s+(\d+)/);
+            if (matchPastille && matchPastille[1]) {
+                const numPastille = matchPastille[1];
+                if (PASTILLES_COORDONNEES[numPastille]) return PASTILLES_COORDONNEES[numPastille];
+            }
+            return "F6"; 
+        }
+
+        function timeToMinutes(timeStr) {
+            if (!timeStr || timeStr.includes("En continu")) return null;
+            const match = timeStr.match(/(\d{1,2})h(\d{2})/);
+            if (!match) return null;
+            return parseInt(match[1]) * 60 + parseInt(match[2]);
+        }
+
+        function durationToMinutes(durStr) {
+            if (!durStr) return 60;
+            let total = 0;
+            const hourMatch = durStr.match(/(\d+)\s*h/);
+            const minMatch = durStr.match(/(\d+)\s*min/);
+            if (hourMatch) total += parseInt(hourMatch[1]) * 60;
+            if (minMatch) total += parseInt(minMatch[2]);
+            return total > 0 ? total : 60;
+        }
+
+        function findNearestCaseFromGPS(lat, lon) {
+            const casesGPS = [
+                { name: "F6", lat: 46.7815, lon: 4.8535 }, { name: "H4", lat: 46.7875, lon: 4.8490 }, 
+                { name: "B12", lat: 46.7745, lon: 4.8575 }, { name: "K9", lat: 46.7830, lon: 4.8640 }, 
+                { name: "C2", lat: 46.7795, lon: 4.8420 }, { name: "G8", lat: 46.7818, lon: 4.8550 }, 
+                { name: "H5", lat: 46.7825, lon: 4.8590 }  
+            ];
+            let nearestCase = "F6";
+            let minDistance = Infinity;
+            casesGPS.forEach(c => {
+                const dist = Math.sqrt(Math.pow(lat - c.lat, 2) + Math.pow(lon - c.lon, 2));
+                if (dist < minDistance) { minDistance = dist; nearestCase = c.name; }
+            });
+            return nearestCase;
+        }
+
+        function getUserLocation() {
+            if (!navigator.geolocation) return;
+            const btn = document.querySelector('.gps-btn');
+            btn.innerText = "⏳";
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userCoordinates = { lat: position.coords.latitude, lon: position.coords.longitude };
+                    const caseDetectee = findNearestCaseFromGPS(userCoordinates.lat, userCoordinates.lon);
+                    document.getElementById('live-letter').value = caseDetectee.charAt(0);
+                    document.getElementById('live-number').value = caseDetectee.substring(1);
+                    btn.innerText = "📍 OK";
+                    setTimeout(() => { btn.innerHTML = "📍 GPS"; }, 2000);
+                    render();
+                },
+                () => { btn.innerHTML = "📍 GPS"; }
+            );
+        }
+
+        function generateGoogleMapsUrl(lieuSpectacle) {
+            const destination = encodeURIComponent(lieuSpectacle + ", Chalon-sur-Saône, France");
+            let origine = "Place de l'Hôtel de Ville, Chalon-sur-Saône, France";
+            if (userCoordinates) origine = `${userCoordinates.lat},${userCoordinates.lon}`;
+            return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origine)}&destination=${destination}&travelmode=walking`;
+        }
+
+        function getUnavailableSlots() {
+            const slots = [];
+            DATA_FESTIVAL.forEach(item => {
+                if (favoris.includes(getUniqueId(item))) {
+                    const start = timeToMinutes(item.horaire);
+                    if (start !== null) {
+                        slots.push({ jour: item.jour, start: start, end: start + durationToMinutes(item.duree), caseCode: getCase(item.lieu) });
+                    }
+                }
+            });
+            return slots;
+        }
+
+        function hasConflict(item, unavailableSlots) {
+            const start = timeToMinutes(item.horaire);
+            if (start === null) return false;
+            if (favoris.includes(getUniqueId(item))) return false;
+            const duration = durationToMinutes(item.duree);
+            const end = start + duration;
+            const caseCode = getCase(item.lieu);
+
+            for (let slot of unavailableSlots) {
+                if (slot.jour === item.jour) {
+                    const travelTime = getTrajetTime(caseCode, slot.caseCode);
+                    const overlap = (start < slot.end && end > slot.start);
+                    const tooCloseAfter = (start >= slot.end && start < slot.end + travelTime);
+                    const tooCloseBefore = (end <= slot.start && end > slot.start - travelTime);
+                    if (overlap || tooCloseAfter || tooCloseBefore) return true;
+                }
+            }
+            return false;
+        }
+
+        function getUniqueId(item) {
+            if (!item) return "";
+            return `${item.compagnie}-${item.titre}-${item.jour}-${item.horaire}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '-');    
+        }
+
+        function render() {
+            listContainer.innerHTML = '';
+            if (currentMode === 'map') return; 
+
+            const unavailableSlots = getUnavailableSlots();
+            let listToDisplay = [];
+
+            if (currentMode === 'planning') {
+                const searchVal = searchInput.value.toLowerCase().trim();
+                listToDisplay = DATA_FESTIVAL.filter(item => {
+                    const matchSearch = item.titre.toLowerCase().includes(searchVal) || item.compagnie.toLowerCase().includes(searchVal) || item.lieu.toLowerCase().includes(searchVal);
+                    let matchDay = true;
+                    if (currentDayFilter === 'Favoris') matchDay = favoris.includes(getUniqueId(item));
+                    else if (currentDayFilter === 'Selection') matchDay = selection.includes(getUniqueId(item));
+                    else if (currentDayFilter !== 'Tous') matchDay = item.jour === currentDayFilter;
+                    return matchSearch && matchDay && !hasConflict(item, unavailableSlots);
+                });
+            } 
+            else if (currentMode === 'live') {
+                const simTimeStr = document.getElementById('live-time').value;
+                const simTime = timeToMinutes(simTimeStr);
+                const currentCase = document.getElementById('live-letter').value + document.getElementById('live-number').value;
+                const currentDay = document.getElementById('live-day').value;
+
+                if (simTime === null) return;
+
+                listToDisplay = DATA_FESTIVAL.filter(item => {
+                    if (item.jour !== currentDay) return false;
+                    const showStart = timeToMinutes(item.horaire);
+                    if (showStart === null) return false;
+                    const travel = getTrajetTime(currentCase, getCase(item.lieu));
+                    return (showStart >= simTime + travel) && (showStart <= simTime + 120) && !hasConflict(item, unavailableSlots);
+                });
+            }
+
+            if (listToDisplay.length === 0) {
+                listContainer.innerHTML = `<div class="no-result">Aucun spectacle 🎪</div>`;
+                return;
+            }
+
+            listToDisplay.forEach(item => {
+                const id = getUniqueId(item);
+                const isFav = favoris.includes(id);
+                const isPinned = selection.includes(id);
+                const caseCode = getCase(item.lieu);
+                const vraiTitre = item.compagnie;
+                const vraieCompagnie = item.titre;
+
+                // Dictionnaire des exceptions strictes gérées à la main
+				const EXCEPTIONS_URL = {
+					"2 soleils": "https://www.chalondanslarue.com/prog2026/_2-soleils/207",
+					"2 soleil": "https://www.chalondanslarue.com/prog2026/_2-soleils/207",
+					"chiche?! - déambulation": "https://www.chalondanslarue.com/prog2026/chiche/207",
+					"leila l'histoire d'une fuite": "https://www.chalondanslarue.com/prog2026/lelia-histoire-d-une-fuite/207"
+				};
+
+				// On nettoie la chaîne pour la correspondance (minuscules et espaces en trop)
+				let clesException = vraiTitre.toLowerCase().trim();
+				let ficheURL = "";
+
+				if (EXCEPTIONS_URL[clesException]) {
+					ficheURL = EXCEPTIONS_URL[clesException];
+				} else {
+					ficheURL = `https://www.chalondanslarue.com/prog2026/${slugify(vraiTitre)}/207`;
+				}
+								
+                const mapsURL = generateGoogleMapsUrl(item.lieu);
+
+                let trajetHTML = "";
+                if (currentMode === 'live') {
+                    const simTime = timeToMinutes(document.getElementById('live-time').value);
+                    const currentCase = document.getElementById('live-letter').value + document.getElementById('live-number').value;
+                    const travel = getTrajetTime(currentCase, caseCode);
+                    const showStart = timeToMinutes(item.horaire);
+                    const limiteDepart = showStart - travel;
+                    const avance = showStart - (simTime + travel);
+                    
+                    let badge = avance >= 20 ? `<span class="marge-badge marge-large">🟢 +${avance}m</span>` : `<span class="marge-badge marge-short">🟡 ${avance}m</span>`;
+                    let limiteStr = `${Math.floor(limiteDepart / 60)}h${String(limiteDepart % 60).padStart(2, '0')}`;
+
+                    trajetHTML = `
+                        <div class="trajet-info">
+                            🚶‍♂️ <strong>${travel} min</strong> de marche (${currentCase} ➔ ${caseCode}) | 🚨 Départ max : <strong>${limiteStr}</strong> ${badge}
+                        </div>
+                    `;
+                }
+
+                let cardClass = "card";
+                if (isFav) cardClass += " favorite";
+                if (isPinned) cardClass += " pinned";
+
+                const card = document.createElement('div');
+                card.className = cardClass;
+                card.innerHTML = `
+                    <div class="card-content">
+                        <div class="card-header-row">
+                            <span class="time">🕒 ${item.horaire}</span>
+                            <span class="zone-tag">📍 Pastille ${caseCode}</span>
+                        </div>
+                        <div class="title">${vraiTitre}</div>
+                        <div class="company">${vraieCompagnie}</div>
+                        <div class="details">${item.duree} | ${item.lieu}</div>
+                        ${trajetHTML}
+                    </div>
+                    <div class="card-right">
+                        <div class="card-actions">
+                            <a href="${ficheURL}" target="_blank" class="fiche-btn">📖 Fiche</a>
+                            <a href="${mapsURL}" target="_blank" class="maps-btn">🗺️ Maps</a>
+                        </div>
+                        <div class="action-triggers">
+                            <button class="fav-btn ${isFav ? 'active' : ''}" onclick="toggleFav('${id}', this)" title="Planning">❤️</button>
+                            <button class="pin-btn ${isPinned ? 'active' : ''}" onclick="togglePin('${id}', this)" title="Idée">📌</button>
+                        </div>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        function toggleFav(id, btn) {
+            if (favoris.includes(id)) favoris = favoris.filter(favId => favId !== id);
+            else favoris.push(id);
+            localStorage.setItem('festival_favs', JSON.stringify(favoris));
+            render();
+        }
+
+        function togglePin(id, btn) {
+            if (selection.includes(id)) selection = selection.filter(selId => selId !== id);
+            else selection.push(id);
+            localStorage.setItem('festival_select', JSON.stringify(selection));
+            render();
+        }
+
+        function filterDay(day, btnElement) {
+            currentDayFilter = day;
+            document.querySelectorAll('.filters .btn').forEach(b => b.classList.remove('active'));
+            btnElement.classList.add('active');
+            render();
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if (mode === 'planning') {
+                document.getElementById('tab-planning').classList.add('active');
+                filterSection.style.display = 'block'; liveInfo.style.display = 'none'; mapContainer.style.display = 'none'; listContainer.style.display = 'grid';
+            } else if (mode === 'live') {
+                document.getElementById('tab-live').classList.add('active');
+                filterSection.style.display = 'none'; liveInfo.style.display = 'block'; mapContainer.style.display = 'none'; listContainer.style.display = 'grid';
+            } else if (mode === 'map') {
+                document.getElementById('tab-map').classList.add('active');
+                filterSection.style.display = 'none'; liveInfo.style.display = 'none'; listContainer.style.display = 'none'; mapContainer.style.display = 'block';
+            }
+            render();
+        }
+
+        searchInput.addEventListener('input', render);
+        window.onload = () => {
+            if (typeof DATA_FESTIVAL === 'undefined') {
+                listContainer.innerHTML = `<div class="no-result" style="color: red; font-weight: bold;">Erreur : Fichier 'programme.js' absent.</div>`;
+            } else { setToRealTime(); }
+        };
+    </script>
+</body>
+</html>
