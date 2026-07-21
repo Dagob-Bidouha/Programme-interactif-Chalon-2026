@@ -63,17 +63,11 @@
             box-shadow: var(--shadow);
         }
 
-        .search-box {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            outline: none;
-        }
-
-        .search-box:focus {
-            border-color: var(--primary);
+        .top-bar-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
         }
 
         .tabs {
@@ -83,6 +77,7 @@
             padding-bottom: 6px;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            flex-grow: 1;
         }
 
         .tab-btn {
@@ -100,6 +95,39 @@
         .tab-btn.active {
             color: var(--primary);
             background-color: #ffe3e3;
+        }
+
+        /* Bouton Velo Switch */
+        .velo-toggle-btn {
+            background-color: #f1f5f9;
+            border: 2px solid #cbd5e1;
+            color: #475569;
+            padding: 4px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.82rem;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .velo-toggle-btn.active {
+            background-color: #10b981;
+            color: white;
+            border-color: #059669;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .search-box:focus {
+            border-color: var(--primary);
         }
 
         .filters {
@@ -215,7 +243,6 @@
             flex-shrink: 0;
         }
 
-        /* Liens fiche et maps transformés en boutons confortables */
         .card-actions {
             display: flex;
             flex-direction: column;
@@ -312,7 +339,7 @@
             }
             
             .fiche-btn, .maps-btn {
-                padding: 8px 16px; /* Encore plus gros sur mobile */
+                padding: 8px 16px;
                 font-size: 0.85rem;
             }
 
@@ -330,10 +357,13 @@
     </header>
 
     <div class="controls">
-        <div class="tabs">
-            <button class="tab-btn active" id="tab-planning" onclick="switchMode('planning')">🗓️ Liste & Filtres</button>
-            <button class="tab-btn" id="tab-live" onclick="switchMode('live')">⚡ À voir maintenant (2h)</button>
-            <button class="tab-btn" id="tab-map" onclick="switchMode('map')">🗺️ Plan</button>
+        <div class="top-bar-controls">
+            <div class="tabs">
+                <button class="tab-btn active" id="tab-planning" onclick="switchMode('planning')">🗓️ Liste & Filtres</button>
+                <button class="tab-btn" id="tab-live" onclick="switchMode('live')">⚡ À voir maintenant (2h)</button>
+                <button class="tab-btn" id="tab-map" onclick="switchMode('map')">🗺️ Plan</button>
+            </div>
+            <button id="velo-toggle" class="velo-toggle-btn" onclick="toggleVeloMode()">🚶 Marche</button>
         </div>
 
         <div id="filter-section">
@@ -376,7 +406,7 @@
     <div class="grid" id="spectacles-list"></div>
 
     <div id="map-container">
-        <iframe src="plan_2026.pdf" title="Plan du festival"></iframe>
+        <iframe src="https://www.chalondanslarue.com/files/chalon/plan_2026.pdf" title="Plan du festival"></iframe>
     </div>
 
     <script src="programme.js"></script>
@@ -398,6 +428,26 @@
             "61": "D4",  "62": "I10", "63": "I7"
         };
 
+        let isVeloMode = JSON.parse(localStorage.getItem('festival_velo')) || false;
+
+        function toggleVeloMode() {
+            isVeloMode = !isVeloMode;
+            localStorage.setItem('festival_velo', JSON.stringify(isVeloMode));
+            updateVeloButtonUI();
+            render();
+        }
+
+        function updateVeloButtonUI() {
+            const btn = document.getElementById('velo-toggle');
+            if (isVeloMode) {
+                btn.innerHTML = "🚴 Vélo";
+                btn.classList.add('active');
+            } else {
+                btn.innerHTML = "🚶 Marche";
+                btn.classList.remove('active');
+            }
+        }
+
         function letterToNumber(letter) {
             const alphabet = "ABCDEFGHIJKL";
             return alphabet.indexOf(letter.toUpperCase()) + 1;
@@ -409,14 +459,19 @@
         }
 
         function getTrajetTime(caseA, caseB) {
-            if (!caseA || !caseB) return 15;
-            if (caseA === caseB) return 5;
+            if (!caseA || !caseB) return isVeloMode ? 5 : 15;
+            if (caseA === caseB) return 3;
             const xA = letterToNumber(caseA.charAt(0));
             const yA = parseInt(caseA.substring(1));
             const xB = letterToNumber(caseB.charAt(0));
             const yB = parseInt(caseB.substring(1));
-            if (isNaN(xA) || isNaN(yA) || isNaN(xB) || isNaN(yB)) return 15;
+            if (isNaN(xA) || isNaN(yA) || isNaN(xB) || isNaN(yB)) return isVeloMode ? 5 : 15;
             const distanceCarreaux = Math.sqrt(Math.pow(xB - xA, 2) + Math.pow(yB - yA, 2));
+            
+            // Si vélo : vitesse environ x3 + 2 min pour se garer/déverrouiller
+            if (isVeloMode) {
+                return Math.max(2, Math.min(12, Math.round(distanceCarreaux * 0.9) + 2));
+            }
             return Math.max(5, Math.min(30, Math.round(distanceCarreaux * 2.5)));
         }
 
@@ -435,6 +490,10 @@
         window.addEventListener('storage', (e) => {
             if (e.key === 'festival_favs') favoris = JSON.parse(e.newValue) || [];
             if (e.key === 'festival_select') selection = JSON.parse(e.newValue) || [];
+            if (e.key === 'festival_velo') {
+                isVeloMode = JSON.parse(e.newValue) || false;
+                updateVeloButtonUI();
+            }
             render();
         });
 
@@ -522,7 +581,8 @@
             const destination = encodeURIComponent(lieuSpectacle + ", Chalon-sur-Saône, France");
             let origine = "Place de l'Hôtel de Ville, Chalon-sur-Saône, France";
             if (userCoordinates) origine = `${userCoordinates.lat},${userCoordinates.lon}`;
-            return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origine)}&destination=${destination}&travelmode=walking`;
+            const travelMode = isVeloMode ? "bicycling" : "walking";
+            return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origine)}&destination=${destination}&travelmode=${travelMode}`;
         }
 
         function getUnavailableSlots() {
@@ -580,6 +640,11 @@
                     else if (currentDayFilter !== 'Tous') matchDay = item.jour === currentDayFilter;
                     return matchSearch && matchDay && !hasConflict(item, unavailableSlots);
                 });
+
+                // Si on trie les favoris, on les ordonne chronologiquement pour calculer les trajets
+                if (currentDayFilter === 'Favoris') {
+                    listToDisplay.sort((a, b) => (timeToMinutes(a.horaire) || 0) - (timeToMinutes(b.horaire) || 0));
+                }
             } 
             else if (currentMode === 'live') {
                 const simTimeStr = document.getElementById('live-time').value;
@@ -603,7 +668,9 @@
                 return;
             }
 
-            listToDisplay.forEach(item => {
+            const iconMode = isVeloMode ? "🚴" : "🚶‍♂️";
+
+            listToDisplay.forEach((item, index) => {
                 const id = getUniqueId(item);
                 const isFav = favoris.includes(id);
                 const isPinned = selection.includes(id);
@@ -611,27 +678,20 @@
                 const vraiTitre = item.compagnie;
                 const vraieCompagnie = item.titre;
 
-                // Dictionnaire des exceptions strictes gérées à la main
-				const EXCEPTIONS_URL = {
-					"2 soleils": "https://www.chalondanslarue.com/prog2026/_2-soleils/207",
-					"2 soleil": "https://www.chalondanslarue.com/prog2026/_2-soleils/207",
-					"chiche?! - déambulation": "https://www.chalondanslarue.com/prog2026/chiche/207",
-					"leila l'histoire d'une fuite": "https://www.chalondanslarue.com/prog2026/lelia-histoire-d-une-fuite/207"
-				};
+                const EXCEPTIONS_URL = {
+                    "2 soleils": "https://www.chalondanslarue.com/prog2026/_2-soleils/207",
+                    "2 soleil": "https://www.chalondanslarue.com/prog2026/_2-soleils/207",
+                    "chiche?! - déambulation": "https://www.chalondanslarue.com/prog2026/chiche/207",
+                    "leila l'histoire d'une fuite": "https://www.chalondanslarue.com/prog2026/lelia-histoire-d-une-fuite/207"
+                };
 
-				// On nettoie la chaîne pour la correspondance (minuscules et espaces en trop)
-				let clesException = vraiTitre.toLowerCase().trim();
-				let ficheURL = "";
-
-				if (EXCEPTIONS_URL[clesException]) {
-					ficheURL = EXCEPTIONS_URL[clesException];
-				} else {
-					ficheURL = `https://www.chalondanslarue.com/prog2026/${slugify(vraiTitre)}/207`;
-				}
-								
+                let clesException = vraiTitre.toLowerCase().trim();
+                let ficheURL = EXCEPTIONS_URL[clesException] || `https://www.chalondanslarue.com/prog2026/${slugify(vraiTitre)}/207`;
                 const mapsURL = generateGoogleMapsUrl(item.lieu);
 
                 let trajetHTML = "";
+
+                // 1. Calcul du trajet pour le mode LIVE
                 if (currentMode === 'live') {
                     const simTime = timeToMinutes(document.getElementById('live-time').value);
                     const currentCase = document.getElementById('live-letter').value + document.getElementById('live-number').value;
@@ -645,9 +705,32 @@
 
                     trajetHTML = `
                         <div class="trajet-info">
-                            🚶‍♂️ <strong>${travel} min</strong> de marche (${currentCase} ➔ ${caseCode}) | 🚨 Départ max : <strong>${limiteStr}</strong> ${badge}
+                            ${iconMode} <strong>${travel} min</strong> de trajet (${currentCase} ➔ ${caseCode}) | 🚨 Départ max : <strong>${limiteStr}</strong> ${badge}
                         </div>
                     `;
+                }
+                // 2. Calcul du trajet entre spectacles dans la vue FAVORIS (Mon Planning)
+                else if (currentMode === 'planning' && currentDayFilter === 'Favoris' && index < listToDisplay.length - 1) {
+                    const nextItem = listToDisplay[index + 1];
+                    const currentStart = timeToMinutes(item.horaire);
+                    const currentDuration = durationToMinutes(item.duree);
+                    const currentEnd = currentStart + currentDuration;
+                    const nextStart = timeToMinutes(nextItem.horaire);
+                    
+                    if (currentStart !== null && nextStart !== null) {
+                        const pauseDisponible = nextStart - currentEnd;
+                        const nextCase = getCase(nextItem.lieu);
+                        const travelToNext = getTrajetTime(caseCode, nextCase);
+                        const marge = pauseDisponible - travelToNext;
+
+                        let badge = marge >= 15 ? `<span class="marge-badge marge-large">🟢 Marge +${marge}m</span>` : `<span class="marge-badge marge-short">🟡 Marge ${marge}m</span>`;
+
+                        trajetHTML = `
+                            <div class="trajet-info">
+                                ➔ Prochain spectacle dans <strong>${pauseDisponible} min</strong> | ${iconMode} Trajet : <strong>${travelToNext} min</strong> (${caseCode} ➔ ${nextCase}) ${badge}
+                            </div>
+                        `;
+                    }
                 }
 
                 let cardClass = "card";
@@ -723,7 +806,10 @@
         window.onload = () => {
             if (typeof DATA_FESTIVAL === 'undefined') {
                 listContainer.innerHTML = `<div class="no-result" style="color: red; font-weight: bold;">Erreur : Fichier 'programme.js' absent.</div>`;
-            } else { setToRealTime(); }
+            } else { 
+                updateVeloButtonUI();
+                setToRealTime(); 
+            }
         };
     </script>
 </body>
