@@ -97,7 +97,6 @@
             background-color: #ffe3e3;
         }
 
-        /* Bouton Velo Switch */
         .velo-toggle-btn {
             background-color: #f1f5f9;
             border: 2px solid #cbd5e1;
@@ -163,8 +162,8 @@
         }
 
         .grid {
-            display: grid;
-            grid-template-columns: 1fr;
+            display: flex;
+            flex-direction: column;
             gap: 8px;
             width: 100%;
             max-width: 800px;
@@ -285,6 +284,7 @@
         }
         .fav-btn.active, .pin-btn.active { filter: grayscale(0%) opacity(100%); }
 
+        /* Style spécifique pour le bloc trajet dans la carte (Onglet Live) */
         .trajet-info {
             margin-top: 6px;
             padding: 6px 8px;
@@ -295,13 +295,30 @@
             color: #14532d;
         }
 
+        /* Nouveau style : Interstice de liaison entre deux spectacles (Onglet Planning) */
+        .interstitiel-trajet {
+            margin: 2px auto;
+            padding: 6px 12px;
+            background-color: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            color: #334155;
+            text-align: center;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
         .marge-badge {
             display: inline-block;
-            padding: 1px 4px;
+            padding: 1px 5px;
             border-radius: 4px;
             font-size: 0.7rem;
             font-weight: bold;
-            margin-top: 2px;
         }
         .marge-large { background-color: #dcfce7; color: #15803d; }
         .marge-short { background-color: #fef3c7; color: #b45309; }
@@ -469,7 +486,6 @@
             if (isNaN(xA) || isNaN(yA) || isNaN(xB) || isNaN(yB)) return isVeloMode ? 5 : 15;
             const distanceCarreaux = Math.sqrt(Math.pow(xB - xA, 2) + Math.pow(yB - yA, 2));
             
-            // Si vélo : vitesse environ x3 + 2 min pour se garer/déverrouiller
             if (isVeloMode) {
                 return Math.max(2, Math.min(12, Math.round(distanceCarreaux * 0.9) + 2));
             }
@@ -702,6 +718,7 @@
 
                 let trajetHTML = "";
 
+                // Calcul du trajet dans la carte UNIQUEMENT pour l'onglet Live
                 if (currentMode === 'live') {
                     const simTime = timeToMinutes(document.getElementById('live-time').value);
                     const currentCase = document.getElementById('live-letter').value + document.getElementById('live-number').value;
@@ -718,36 +735,6 @@
                             ${iconMode} <strong>${travel} min</strong> de trajet (${currentCase} ➔ ${caseCode}) | 🚨 Départ max : <strong>${limiteStr}</strong> ${badge}
                         </div>
                     `;
-                }
-                else if (currentMode === 'planning' && currentDayFilter === 'Favoris' && index < listToDisplay.length - 1) {
-                    const nextItem = listToDisplay[index + 1];
-                    const currentStart = timeToMinutes(item.horaire);
-                    const currentDuration = durationToMinutes(item.duree);
-                    const currentEnd = currentStart + currentDuration;
-                    const nextStart = timeToMinutes(nextItem.horaire);
-                    
-                    if (currentStart !== null && nextStart !== null) {
-                        const pauseDisponible = nextStart - currentEnd;
-                        const nextCase = getCase(nextItem.lieu);
-                        const travelToNext = getTrajetTime(caseCode, nextCase);
-                        const marge = pauseDisponible - travelToNext;
-
-                        let badge = "";
-                        if (marge <= 0) {
-                            const retard = Math.abs(marge);
-                            badge = `<span class="marge-badge marge-short" style="background-color: #fee2e2; color: #dc2626;">🔴 Retard de ${retard}m</span>`;
-                        } else if (marge < 20) {
-                            badge = `<span class="marge-badge marge-short">🟡 Marge ${marge}m</span>`;
-                        } else {
-                            badge = `<span class="marge-badge marge-large">🟢 Marge +${marge}m</span>`;
-                        }
-
-                        trajetHTML = `
-                            <div class="trajet-info">
-                                ➔ Prochain spectacle dans <strong>${pauseDisponible} min</strong> | ${iconMode} Trajet : <strong>${travelToNext} min</strong> (${caseCode} ➔ ${nextCase}) ${badge}
-                            </div>
-                        `;
-                    }
                 }
 
                 let cardClass = "card";
@@ -781,6 +768,39 @@
                     </div>
                 `;
                 listContainer.appendChild(card);
+
+                // Ajout d'un interstice visuel ENTRE deux spectacles si on est dans Mon Planning
+                if (currentMode === 'planning' && currentDayFilter === 'Favoris' && index < listToDisplay.length - 1) {
+                    const nextItem = listToDisplay[index + 1];
+                    const currentStart = timeToMinutes(item.horaire);
+                    const currentDuration = durationToMinutes(item.duree);
+                    const currentEnd = currentStart + currentDuration;
+                    const nextStart = timeToMinutes(nextItem.horaire);
+                    
+                    if (currentStart !== null && nextStart !== null) {
+                        const pauseDisponible = nextStart - currentEnd;
+                        const nextCase = getCase(nextItem.lieu);
+                        const travelToNext = getTrajetTime(caseCode, nextCase);
+                        const marge = pauseDisponible - travelToNext;
+
+                        let badge = "";
+                        if (marge <= 0) {
+                            const retard = Math.abs(marge);
+                            badge = `<span class="marge-badge marge-short" style="background-color: #fee2e2; color: #dc2626;">🔴 Retard de ${retard}m</span>`;
+                        } else if (marge < 20) {
+                            badge = `<span class="marge-badge marge-short">🟡 Marge ${marge}m</span>`;
+                        } else {
+                            badge = `<span class="marge-badge marge-large">🟢 Marge +${marge}m</span>`;
+                        }
+
+                        const divider = document.createElement('div');
+                        divider.className = "interstitiel-trajet";
+                        divider.innerHTML = `
+                            ⬇️ Temps libre : <strong>${pauseDisponible} min</strong> | ${iconMode} Trajet : <strong>${travelToNext} min</strong> (${caseCode} ➔ ${nextCase}) ${badge}
+                        `;
+                        listContainer.appendChild(divider);
+                    }
+                }
             });
         }
 
@@ -810,10 +830,10 @@
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             if (mode === 'planning') {
                 document.getElementById('tab-planning').classList.add('active');
-                filterSection.style.display = 'block'; liveInfo.style.display = 'none'; mapContainer.style.display = 'none'; listContainer.style.display = 'grid';
+                filterSection.style.display = 'block'; liveInfo.style.display = 'none'; mapContainer.style.display = 'none'; listContainer.style.display = 'flex';
             } else if (mode === 'live') {
                 document.getElementById('tab-live').classList.add('active');
-                filterSection.style.display = 'none'; liveInfo.style.display = 'block'; mapContainer.style.display = 'none'; listContainer.style.display = 'grid';
+                filterSection.style.display = 'none'; liveInfo.style.display = 'block'; mapContainer.style.display = 'none'; listContainer.style.display = 'flex';
             } else if (mode === 'map') {
                 document.getElementById('tab-map').classList.add('active');
                 filterSection.style.display = 'none'; liveInfo.style.display = 'none'; listContainer.style.display = 'none'; mapContainer.style.display = 'block';
