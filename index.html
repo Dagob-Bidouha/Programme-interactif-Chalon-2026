@@ -722,7 +722,7 @@
                         </div>
                     `;
                 }
-                // 2. Calcul du trajet entre spectacles dans la vue FAVORIS (Mon Planning)
+   // 2. Calcul du trajet entre spectacles dans la vue FAVORIS (Mon Planning)
                 else if (currentMode === 'planning' && currentDayFilter === 'Favoris' && index < listToDisplay.length - 1) {
                     const nextItem = listToDisplay[index + 1];
                     const currentStart = timeToMinutes(item.horaire);
@@ -736,7 +736,15 @@
                         const travelToNext = getTrajetTime(caseCode, nextCase);
                         const marge = pauseDisponible - travelToNext;
 
-                        let badge = marge >= 15 ? `<span class="marge-badge marge-large">🟢 Marge +${marge}m</span>` : `<span class="marge-badge marge-short">🟡 Marge ${marge}m</span>`;
+                        let badge = "";
+                        if (marge < 0) {
+                            const retard = Math.abs(marge);
+                            badge = `<span class="marge-badge marge-short" style="background-color: #fee2e2; color: #dc2626;">🔴 Retard de ${retard}m</span>`;
+                        } else if (marge < 20) {
+                            badge = `<span class="marge-badge marge-short">🟡 Marge ${marge}m</span>`;
+                        } else {
+                            badge = `<span class="marge-badge marge-large">🟢 Marge +${marge}m</span>`;
+                        }
 
                         trajetHTML = `
                             <div class="trajet-info">
