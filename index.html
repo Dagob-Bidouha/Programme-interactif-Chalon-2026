@@ -611,10 +611,12 @@
             return slots;
         }
 
-        function hasConflict(item, unavailableSlots) {
+       function hasConflict(item, unavailableSlots) {
+            // Si le spectacle est déjà dans les favoris, on ne le masque JAMAIS (pour pouvoir afficher les alertes de retard dans Mon Planning)
+            if (favoris.includes(getUniqueId(item))) return false;
+
             const start = timeToMinutes(item.horaire);
             if (start === null) return false;
-            if (favoris.includes(getUniqueId(item))) return false;
             const duration = durationToMinutes(item.duree);
             const end = start + duration;
             const caseCode = getCase(item.lieu);
