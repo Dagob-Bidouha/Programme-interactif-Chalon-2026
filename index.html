@@ -724,7 +724,7 @@
                         </div>
                     `;
                 }
-   // 2. Calcul du trajet entre spectacles dans la vue FAVORIS (Mon Planning)
+// 2. Calcul du trajet entre spectacles dans la vue FAVORIS (Mon Planning)
                 else if (currentMode === 'planning' && currentDayFilter === 'Favoris' && index < listToDisplay.length - 1) {
                     const nextItem = listToDisplay[index + 1];
                     const currentStart = timeToMinutes(item.horaire);
@@ -739,7 +739,8 @@
                         const marge = pauseDisponible - travelToNext;
 
                         let badge = "";
-                        if (marge < 0) {
+                        // Si la marge est <= 0, c'est impossible / trop juste -> Rouge 🔴
+                        if (marge <= 0) {
                             const retard = Math.abs(marge);
                             badge = `<span class="marge-badge marge-short" style="background-color: #fee2e2; color: #dc2626;">🔴 Retard de ${retard}m</span>`;
                         } else if (marge < 20) {
@@ -755,7 +756,6 @@
                         `;
                     }
                 }
-
                 let cardClass = "card";
                 if (isFav) cardClass += " favorite";
                 if (isPinned) cardClass += " pinned";
