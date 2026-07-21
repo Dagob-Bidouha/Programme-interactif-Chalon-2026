@@ -186,6 +186,7 @@
 
         .card.favorite { border-left-color: var(--primary); background-color: #fffdfc; }
         .card.pinned:not(.favorite) { border-left-color: #f59e0b; }
+        .card.conflict { background-color: #fef2f2; border-left: 4px solid #ef4444; }
 
         .card-content {
             flex-grow: 1;
@@ -535,26 +536,24 @@
 
         function durationToMinutes(durStr) {
             if (!durStr) return 60;
-        let total = 0;
-        
-        // Extrait les heures si présentes (ex: "1h")
-        const hourMatch = durStr.match(/(\d+)\s*h/i);
+            let total = 0;
+            
+            const hourMatch = durStr.match(/(\d+)\s*h/i);
             if (hourMatch) {
-            total += parseInt(hourMatch[1]) * 60;
-        }
-        
-        // Extrait les minutes (ex: "1h15", "1h 15 min", "45 min")
-        const minMatch = durStr.match(/(?:h\s*(\d+)|(\d+)\s*min)/i);
+                total += parseInt(hourMatch[1]) * 60;
+            }
+            
+            const minMatch = durStr.match(/(?:h\s*(\d+)|(\d+)\s*min)/i);
             if (minMatch) {
-            const mins = minMatch[1] || minMatch[2];
-            total += parseInt(mins);
-        } else if (!hourMatch) {
-            const justNum = durStr.match(/\d+/);
-            if (justNum) total = parseInt(justNum[0]);
+                const mins = minMatch[1] || minMatch[2];
+                total += parseInt(mins);
+            } else if (!hourMatch) {
+                const justNum = durStr.match(/\d+/);
+                if (justNum) total = parseInt(justNum[0]);
+            }
+        
+            return total > 0 ? total : 60;
         }
-    
-        return total > 0 ? total : 60;
-    }
 
         function findNearestCaseFromGPS(lat, lon) {
             const casesGPS = [
@@ -611,10 +610,7 @@
             return slots;
         }
 
-       function hasConflict(item, unavailableSlots) {
-            // Si le spectacle est déjà dans les favoris, on ne le masque JAMAIS (pour pouvoir afficher les alertes de retard dans Mon Planning)
-            if (favoris.includes(getUniqueId(item))) return false;
-
+        function hasConflict(item, unavailableSlots) {
             const start = timeToMinutes(item.horaire);
             if (start === null) return false;
             const duration = durationToMinutes(item.duree);
@@ -653,10 +649,9 @@
                     if (currentDayFilter === 'Favoris') matchDay = favoris.includes(getUniqueId(item));
                     else if (currentDayFilter === 'Selection') matchDay = selection.includes(getUniqueId(item));
                     else if (currentDayFilter !== 'Tous') matchDay = item.jour === currentDayFilter;
-                    return matchSearch && matchDay && !hasConflict(item, unavailableSlots);
+                    return matchSearch && matchDay;
                 });
 
-                // Si on trie les favoris, on les ordonne chronologiquement pour calculer les trajets
                 if (currentDayFilter === 'Favoris') {
                     listToDisplay.sort((a, b) => (timeToMinutes(a.horaire) || 0) - (timeToMinutes(b.horaire) || 0));
                 }
@@ -674,7 +669,7 @@
                     const showStart = timeToMinutes(item.horaire);
                     if (showStart === null) return false;
                     const travel = getTrajetTime(currentCase, getCase(item.lieu));
-                    return (showStart >= simTime + travel) && (showStart <= simTime + 120) && !hasConflict(item, unavailableSlots);
+                    return (showStart >= simTime + travel) && (showStart <= simTime + 120);
                 });
             }
 
@@ -689,6 +684,7 @@
                 const id = getUniqueId(item);
                 const isFav = favoris.includes(id);
                 const isPinned = selection.includes(id);
+                const isConflicting = hasConflict(item, unavailableSlots);
                 const caseCode = getCase(item.lieu);
                 const vraiTitre = item.compagnie;
                 const vraieCompagnie = item.titre;
@@ -706,7 +702,6 @@
 
                 let trajetHTML = "";
 
-                // 1. Calcul du trajet pour le mode LIVE
                 if (currentMode === 'live') {
                     const simTime = timeToMinutes(document.getElementById('live-time').value);
                     const currentCase = document.getElementById('live-letter').value + document.getElementById('live-number').value;
@@ -724,7 +719,6 @@
                         </div>
                     `;
                 }
-// 2. Calcul du trajet entre spectacles dans la vue FAVORIS (Mon Planning)
                 else if (currentMode === 'planning' && currentDayFilter === 'Favoris' && index < listToDisplay.length - 1) {
                     const nextItem = listToDisplay[index + 1];
                     const currentStart = timeToMinutes(item.horaire);
@@ -739,7 +733,6 @@
                         const marge = pauseDisponible - travelToNext;
 
                         let badge = "";
-                        // Si la marge est <= 0, c'est impossible / trop juste -> Rouge 🔴
                         if (marge <= 0) {
                             const retard = Math.abs(marge);
                             badge = `<span class="marge-badge marge-short" style="background-color: #fee2e2; color: #dc2626;">🔴 Retard de ${retard}m</span>`;
@@ -756,9 +749,11 @@
                         `;
                     }
                 }
+
                 let cardClass = "card";
                 if (isFav) cardClass += " favorite";
                 if (isPinned) cardClass += " pinned";
+                if (isConflicting && !isFav) cardClass += " conflict";
 
                 const card = document.createElement('div');
                 card.className = cardClass;
@@ -767,6 +762,7 @@
                         <div class="card-header-row">
                             <span class="time">🕒 ${item.horaire}</span>
                             <span class="zone-tag">📍 Pastille ${caseCode}</span>
+                            ${isConflicting && !isFav ? '<span class="zone-tag" style="background-color: #fee2e2; color: #dc2626;">⚠️ Conflit horaire</span>' : ''}
                         </div>
                         <div class="title">${vraiTitre}</div>
                         <div class="company">${vraieCompagnie}</div>
