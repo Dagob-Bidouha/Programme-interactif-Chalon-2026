@@ -535,13 +535,26 @@
 
         function durationToMinutes(durStr) {
             if (!durStr) return 60;
-            let total = 0;
-            const hourMatch = durStr.match(/(\d+)\s*h/);
-            const minMatch = durStr.match(/(\d+)\s*min/);
-            if (hourMatch) total += parseInt(hourMatch[1]) * 60;
-            if (minMatch) total += parseInt(minMatch[2]);
-            return total > 0 ? total : 60;
+        let total = 0;
+        
+        // Extrait les heures si présentes (ex: "1h")
+        const hourMatch = durStr.match(/(\d+)\s*h/i);
+            if (hourMatch) {
+            total += parseInt(hourMatch[1]) * 60;
         }
+        
+        // Extrait les minutes (ex: "1h15", "1h 15 min", "45 min")
+        const minMatch = durStr.match(/(?:h\s*(\d+)|(\d+)\s*min)/i);
+            if (minMatch) {
+            const mins = minMatch[1] || minMatch[2];
+            total += parseInt(mins);
+        } else if (!hourMatch) {
+            const justNum = durStr.match(/\d+/);
+            if (justNum) total = parseInt(justNum[0]);
+        }
+    
+        return total > 0 ? total : 60;
+    }
 
         function findNearestCaseFromGPS(lat, lon) {
             const casesGPS = [
